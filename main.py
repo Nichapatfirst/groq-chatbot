@@ -1,24 +1,35 @@
-import requests
+import os
+from pydantic import BaseModel, Field
+from typing import List
+from groq import Groq
+import instructor
 
-# Replace with your actual Groq API Key
-GROQ_API_KEY = "your_groq_api_key"
+# Set up API Key
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")  # Ensure you set this in your environment
+
+# Define response model
+class ResponseModel(BaseModel):
+    name: str
+    facts: List[str] = Field(..., description="A list of facts about the subject")
+
+# Initialize Groq Client
+client = Groq(api_key=GROQ_API_KEY)
+
+# Connect Instructor to Groq
+client = instructor.from_groq(client, mode=instructor.Mode.TOOLS)
 
 def ask_groq(question):
-    url = "https://api.groq.com/v1/query"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {"question": question}
+    """Function to send user input to Groq API and get a response."""
+    response = client.chat.completions.create(
+        model="mixtral-8x7b-32768",
+        messages=[{"role": "user", "content": question}],
+        response_model=ResponseModel,
+    )
+    return response.model_dump_json(indent=2)
 
-    response = requests.post(url, json=data, headers=headers)
-    if response.status_code == 200:
-        return response.json().get("answer", "No response received.")
-    else:
-        return f"Error: {response.status_code} - {response.text}"
+# Start Chat Loop
+print("Welcome to Groq Chatbot! (Type 'quit' to exit)")
 
-# Chat loop
-print("Groq Chatbot (type 'quit' to exit)")
 while True:
     user_input = input("You: ")
     if user_input.lower() == "quit":
