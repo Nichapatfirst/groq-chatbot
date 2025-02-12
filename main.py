@@ -34,6 +34,7 @@ while True:
     user_input = input("You: ")
     if user_input.lower() == "quit":
         print("Goodbye!")
-        break
+        break  # This will properly exit the loop
     response = ask_groq(user_input)
     print(f"Groq: {response}")
+
